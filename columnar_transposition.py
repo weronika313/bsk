@@ -110,12 +110,13 @@ def encrypt_columnar_transposition_c(message: str, key: str) -> str:
     key = key.upper()
     key_sequence: list[int] = create_key_sequence(key)
 
-    message = message.replace(" ", "").replace('\n', '').upper()
+    message = message.replace(" ", "").replace("\n", "").upper()
     key_len: int = len(key)
     message_len: int = len(message)
     i: int = 0
     k: int = 0
     wid: int = 0
+    j: int = 0
 
     while i < message_len:
         if k < key_len:
@@ -125,11 +126,10 @@ def encrypt_columnar_transposition_c(message: str, key: str) -> str:
 
         for j in range(key_len):
             if key_sequence[j] == k:
-                m = j
                 break
 
         wid += 1
-        i += m
+        i += j
         i += 1
 
     message_table = [[" " for i in range(key_len)] for j in range(wid)]
@@ -163,7 +163,6 @@ def encrypt_columnar_transposition_c(message: str, key: str) -> str:
         if message_len <= k:
             break
 
-
     encrypted_message: str = ""
     print(message_table)
 
@@ -173,10 +172,107 @@ def encrypt_columnar_transposition_c(message: str, key: str) -> str:
                 break
 
         for k in range(wid):
-            if message_table[k][j] != ' ':
+            if message_table[k][j] != " ":
                 encrypted_message += message_table[k][j]
 
     return encrypted_message
+
+
+def decrypt_columnar_transposition_c(message: str, key: str) -> str:
+    key = key.upper()
+    key_sequence: list[int] = create_key_sequence(key)
+
+    message = message.replace(" ", "").replace("\n", "").upper()
+    key_len: int = len(key)
+    message_len: int = len(message)
+    i: int = 0
+    k: int = 0
+    j: int = 0
+    wid: int = 0
+    before_i: int = 0
+
+    while i < message_len:
+        if k < key_len:
+            k += 1
+        else:
+            k = 1
+
+        for j in range(key_len):
+            if key_sequence[j] == k:
+                break
+
+        wid += 1
+        before_i = i
+        i += j
+        i += 1
+
+    mod: int
+    if message_len == i:
+        mod = 0
+    else:
+        mod = message_len - before_i
+
+    message_table: list[list[str]] = [[" " for i in range(key_len)] for j in range(wid)]
+    temp: int
+    l: int = 0
+
+    for i in range(key_len):
+        for j in range(key_len):
+            if key_sequence[j] == i + 1:
+                break
+
+        temp = j
+        d: int = 0
+
+        if mod > temp or mod == 0:
+            for j in range(wid):
+                if d < key_len:
+                    d += 1
+                else:
+                    d = 1
+
+                for k in range(key_len):
+                    if key_sequence[k] == d:
+                        break
+
+                if temp <= k:
+                    message_table[j][temp] = message[l]
+                    l += 1
+                    if message_len <= l:
+                        break
+
+        else:
+            for j in range((wid - 1)):
+                if d < key_len:
+                    d += 1
+                else:
+                    d = 1
+
+                for k in range(key_len):
+                    if key_sequence[k] == d:
+                        break
+
+                if temp <= k:
+                    message_table[j][temp] = message[l]
+                    l += 1
+                    if message_len <= l:
+                        break
+
+        if message_len <= l:
+            break
+
+    decrypted_message: str = ""
+    k = 0
+    for i in range(wid):
+        for j in range(key_len):
+            if k > message_len:
+                break
+            else:
+                if message_table[i][j] != " ":
+                    decrypted_message += message_table[i][j]
+                    k += 1
+
+    return decrypted_message
 
 
 def create_key_sequence(key: str) -> list[int]:
