@@ -7,7 +7,11 @@ from columnar_transposition import (
     encrypt_columnar_transposition_b,
     decrypt_columnar_transposition_a,
     encrypt_columnar_transposition_a,
+    decrypt_columnar_transposition_c,
+    encrypt_columnar_transposition_c
 )
+from vigenere_cipher import encrypt_vigenere_cipher, decrypt_vigenere_cipher
+from caesar_cipher import encrypt_caesar_cipher, decrypt_caesar_cipher
 
 
 NORM_FONT = ("Verdana", 10)
@@ -97,7 +101,17 @@ class Menu(tk.Frame):
             height=3,
             command=lambda: parent.switch_frame(BasicCryptographyFrame),
         )
-        button1.grid(column=0, row=1, pady=3)
+        button2 = tk.Button(
+            self,
+            text="Generator liczb pseudolosowych",
+            fg="gray68",
+            bg="gray14",
+            font=("calibri", 10, "bold"),
+            height=3,
+            command=lambda: parent.switch_frame(LFSRFrame),
+        )
+        button1.grid(column=0, row=1, pady=2, ipadx=4)
+        button2.grid(column=0, row=2, pady=2, ipadx=75)
 
 
 class BasicCryptographyFrame(tk.Frame):
@@ -128,16 +142,12 @@ class BasicCryptographyFrame(tk.Frame):
 
         options = [("Szyfrowanie", 101), ("Deszyfrowanie", 102)]
 
-        def ShowChoice():
-            print(self.coded_or_decoded.get())
-
         for option, val in options:
             tk.Radiobutton(
                 self.option_frame,
                 text=option,
                 padx=20,
                 variable=self.coded_or_decoded,
-                command=ShowChoice,
                 value=val,
                 bg="gray70",
             ).pack(anchor=tk.W)
@@ -149,6 +159,9 @@ class BasicCryptographyFrame(tk.Frame):
             "Rail Fence",
             "Przestawienie macierzowe A",
             "Przestawienie macierzowe B",
+            "Przestawienie macierzowe C",
+            "Szyfr Cezara",
+            "Szyfr Vigenere'a"
         ]
 
         self.cipher_label = tk.Label(
@@ -182,7 +195,7 @@ class BasicCryptographyFrame(tk.Frame):
         l_key = tk.Label(self.data_frame, text="Wprowadz klucz:")
         self.key = tk.Text(self.data_frame, width=30, height=1, wrap=tk.WORD)
         l1 = tk.Label(self.data_frame, text="Wprowadź tekst:")
-        self.entry = tk.Text(self.data_frame, width=85, height=3, wrap=tk.WORD)
+        self.entry = tk.Text(self.data_frame, width=85, height=12, wrap=tk.WORD)
         button = tk.Button(
             self.data_frame,
             text="Szyfruj / Deszyfruj ",
@@ -190,7 +203,7 @@ class BasicCryptographyFrame(tk.Frame):
             command=lambda: self.decrypt_encrypt(),
         )
         l2 = tk.Label(self.data_frame, text="Zaszyfrowany/ Zdeszyfrowany tekst:")
-        self.output = tk.Text(self.data_frame, width=85, height=3, wrap=tk.WORD)
+        self.output = tk.Text(self.data_frame, width=85, height=12, wrap=tk.WORD)
 
         l_key.grid(row=0, column=1, padx=5, sticky="w")
         self.key.grid(row=1, column=1, padx=5, pady=(0, 10), sticky="w")
@@ -235,9 +248,18 @@ class BasicCryptographyFrame(tk.Frame):
                 if self.columnar_transposition_validation_A(key):
                     result = encrypt_columnar_transposition_a(message, key)
             if cipher.upper() == "PRZESTAWIENIE MACIERZOWE B":
-                if self.columnar_transposition_validation_B(key):
-
+                if self.columnar_transposition_validation_B_C(key):
                     result = encrypt_columnar_transposition_b(message, key)
+            if cipher.upper() == "PRZESTAWIENIE MACIERZOWE C":
+                if self.columnar_transposition_validation_B_C(key):
+                    result = encrypt_columnar_transposition_c(message, key)
+            if cipher.upper() == "SZYFR CEZARA":
+                if self.caesar_cipher_validation(message, key):
+                    key = int(key)
+                    result = encrypt_caesar_cipher(message, key)
+            if cipher.upper() == "SZYFR VIGENERE'A":
+                if self.vigenere_cipher_validation(message, key):
+                    result = encrypt_vigenere_cipher(message, key)
         elif decrypt_or_encrypt == 102:
             if cipher.upper() == "RAIL FENCE":
                 if self.rail_fence_validation(key):
@@ -247,8 +269,18 @@ class BasicCryptographyFrame(tk.Frame):
                 if self.columnar_transposition_validation_A(key):
                     result = decrypt_columnar_transposition_a(message, key)
             if cipher.upper() == "PRZESTAWIENIE MACIERZOWE B":
-                if self.columnar_transposition_validation_B(key):
+                if self.columnar_transposition_validation_B_C(key):
                     result = decrypt_columnar_transposition_b(message, key)
+            if cipher.upper() == "PRZESTAWIENIE MACIERZOWE C":
+                if self.columnar_transposition_validation_B_C(key):
+                    result = decrypt_columnar_transposition_c(message, key)
+            if cipher.upper() == "SZYFR CEZARA":
+                if self.caesar_cipher_validation(message, key):
+                    key = int(key)
+                    result = decrypt_caesar_cipher(message, key)
+            if cipher.upper() == "SZYFR VIGENERE'A":
+                if self.vigenere_cipher_validation(message, key):
+                    result = decrypt_vigenere_cipher(message, key)
 
         self.output.insert(tk.END, str(result))
 
@@ -262,7 +294,7 @@ class BasicCryptographyFrame(tk.Frame):
         else:
             return True
 
-    def columnar_transposition_validation_B(self, key):
+    def columnar_transposition_validation_B_C(self, key):
         if key.isalpha():
             return True
         else:
@@ -270,13 +302,38 @@ class BasicCryptographyFrame(tk.Frame):
             return False
 
     def columnar_transposition_validation_A(self, key):
-        if not check_key_format_col_trans_A(key):
+        if not check_key_format_col_trans_a(key):
             popupmsg("Zły format klucza! Poprawny to np. 1-4-3-2")
             return False
         elif not check_numbers_sequence(key):
             popupmsg("Klucz musi być sekwencją liczb np. 1-3-2")
         else:
             return True
+
+    def caesar_cipher_validation(self, message, key):
+        message_to_check: str = message.replace(" ", "")
+        if not is_integer(key):
+            popupmsg("klucz musi być liczbą dodatnią")
+            return False
+        elif int(key) <= 0:
+            popupmsg("klucz musi być większy od zera")
+            return False
+        if not message_to_check.isalpha():
+            popupmsg("Wiadomosc musi składać się z samych liter alfabetu i spacji")
+            return False
+
+        return True
+
+    def vigenere_cipher_validation(self, message, key):
+        message_to_check: str = message.replace(" ", "").replace("\n", "")
+        if not key.isalpha():
+            popupmsg("Klucz musi składać się tylko z liter alfabetu")
+            return False
+        if not message_to_check.isalpha():
+            popupmsg("Wiadomosc musi składać się z tylko z liter, spacji lub enterow")
+            return False
+
+        return True
 
 
 def is_integer(n):
@@ -288,7 +345,7 @@ def is_integer(n):
         return float(n).is_integer()
 
 
-def check_key_format_col_trans_A(key):
+def check_key_format_col_trans_a(key):
     check = 0
     for i in range(len(key)):
         if is_integer(key[i]):
@@ -327,6 +384,85 @@ def check_numbers_sequence(key):
         return False
 
 
+class LFSRFrame(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.config(width=880, height=620, padx=3, pady=3, bg="gray70")
+        self.option_frame = tk.Frame(self)
+        self.data_frame = tk.Frame(self)
+        self.option_frame.config(width=300, height=620, padx=3, pady=3, bg="gray70")
+        self.data_frame.config(width=580, height=620, padx=3, pady=3, bg="snow")
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        self.option_frame.grid(row=0, column=1, sticky="nsew")
+        self.data_frame.grid(row=0, column=0, sticky="nsew")
+        self.option_label = tk.Label(
+            self.option_frame,
+            text="OPCJE",
+            bg="gray70",
+            fg="gray21",
+            font=("calibri", 11, "bold"), width=21
+        ).pack()
+
+        sep = tk.Frame(self.option_frame, width=1, bg="gray30")
+        sep.pack(fill="x", pady=20)
+
+        start_stop_button = tk.Button(
+            self.option_frame,
+            text="START / STOP",
+            width=20,
+            bg="grey21",
+            fg="snow"
+        ).pack()
+
+        self.option_label = tk.Label(
+            self.option_frame,
+            text="70",
+            bg="gray70",
+            fg="gray21",
+            font=("calibri", 50, "bold"),
+        ).pack()
+        sep = tk.Frame(self.option_frame, width=1, bg="gray30")
+
+        sep.pack(fill="x")
+
+        l_function = tk.Label(self.data_frame, text="Wprowadz wielomian:", bg='snow')
+        l_example = tk.Label(self.data_frame, text='np. "1+ax+bx^2+cx^4+...+x^z"',
+                             bg="snow",
+            fg="gray70",
+            font=("calibri", 8))
+        self.function = tk.Text(self.data_frame, width=30, height=1, wrap=tk.WORD)
+        button_generate_table = tk.Button(
+            self.data_frame,
+            text="Wygeneruj tabele ",
+            width=20,
+            command=lambda: show()
+        )
+
+        cols = ('Position', 'Name', 'Score')
+        listBox = ttk.Treeview(self.data_frame, columns=cols, show='headings')
+        # set column headings
+        for col in cols:
+            listBox.heading(col, text=col)
+
+
+        def show():
+
+            tempList = [['Jim', '0.33'], ['Dave', '0.67'], ['James', '0.67'], ['Eden', '0.5']]
+            tempList.sort(key=lambda e: e[1], reverse=True)
+
+            for i, (name, score) in enumerate(tempList, start=1):
+                listBox.insert("", "end", values=(i, name, score))
+
+        l_function.grid(row=0, column=1, padx=5, sticky="w")
+        l_example.grid(row=1, column=1, padx=5, sticky="w")
+        self.function.grid(row=2, column=1, padx=1, pady=10, sticky="w")
+        button_generate_table.grid(row=3, column=1, padx=1, pady=10, sticky="w")
+        listBox.grid(row=4, column=1, columnspan=2)
+
+
+
 def popupmsg(msg):
     popup = tk.Tk()
     popup.geometry("400x100")
@@ -336,3 +472,4 @@ def popupmsg(msg):
     B1 = tk.Button(popup, text="OK", command=popup.destroy)
     B1.pack()
     popup.mainloop()
+
